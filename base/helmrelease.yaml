@@ -3,14 +3,14 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: example
-  namespace: example
+  name: kyverno-policies
+  namespace: kyverno-policies
 spec:
   interval: 10m
-  releaseName: example
+  releaseName: kyverno-policies
   chartRef:
     kind: OCIRepository
-    name: example
+    name: kyverno-policies
   install:
     remediation:
       retries: 0

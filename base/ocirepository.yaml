@@ -2,11 +2,11 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
-  name: example
-  namespace: example
+  name: kyverno-policies
+  namespace: kyverno-policies
 spec:
   interval: 5m
-  url: oci://ghcr.io/twallac10/charts/promo-example
+  url: oci://ghcr.io/twallac10/charts/promo-kyverno-policies
   layerSelector:
     mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
     operation: copy
