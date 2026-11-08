@@ -1,1 +1,8 @@
-{}
+# Baked into the wrapper chart (part of what we test and promote).
+# validationFailureAction is tier config: tiers/<tier>/tier.yaml.
+kyverno-policies:
+  podSecurityStandard: baseline
+
+# Our Helm tests.
+promoTest:
+  image: alpine/kubectl:1.37.2@sha256:1a7fc3308a8eee1c8bd177930fc521088c6dc64ad8b68c88319151fd87d79deb

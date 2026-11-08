@@ -1,0 +1,27 @@
+{{- /* Every policy this release installed must report Ready. */}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-test-ready
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  restartPolicy: Never
+  serviceAccountName: {{ .Release.Name }}-test
+  containers:
+    - name: test
+      image: {{ .Values.promoTest.image }}
+      command: [sh, -c]
+      args:
+        - |
+          sel=app.kubernetes.io/instance={{ .Release.Name }}
+          for i in $(seq 1 30); do
+            total=$(kubectl get validatingpolicies -l "$sel" -o name | wc -l)
+            notready=$(kubectl get validatingpolicies -l "$sel" \
+              -o jsonpath='{range .items[?(@.status.conditionStatus.ready!=true)]}{.metadata.name}{"\n"}{end}')
+            if [ "$total" -gt 0 ] && [ -z "$notready" ]; then echo "PASS: $total policies Ready"; exit 0; fi
+            echo "attempt $i: total=$total not ready: $notready"; sleep 5
+          done
+          kubectl get validatingpolicies -l "$sel" -o yaml | grep -A8 conditionStatus
+          echo "FAIL: policies not Ready"; exit 1
