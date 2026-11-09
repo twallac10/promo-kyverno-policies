@@ -18,10 +18,11 @@ spec:
           sel=app.kubernetes.io/instance={{ .Release.Name }}
           for i in $(seq 1 30); do
             total=$(kubectl get validatingpolicies -l "$sel" -o name | wc -l)
-            notready=$(kubectl get validatingpolicies -l "$sel" \
-              -o jsonpath='{range .items[?(@.status.conditionStatus.ready!=true)]}{.metadata.name}{"\n"}{end}')
-            if [ "$total" -gt 0 ] && [ -z "$notready" ]; then echo "PASS: $total policies Ready"; exit 0; fi
-            echo "attempt $i: total=$total not ready: $notready"; sleep 5
+            # Count the Ready ones: a `!=true` filter skips policies with no status yet.
+            ready=$(kubectl get validatingpolicies -l "$sel" \
+              -o jsonpath='{range .items[?(@.status.conditionStatus.ready==true)]}{.metadata.name}{"\n"}{end}' | grep -c . || true)
+            if [ "$total" -gt 0 ] && [ "$ready" -eq "$total" ]; then echo "PASS: $total policies Ready"; exit 0; fi
+            echo "attempt $i: $ready of $total Ready"; sleep 5
           done
           kubectl get validatingpolicies -l "$sel" -o yaml | grep -A8 conditionStatus
           echo "FAIL: policies not Ready"; exit 1
