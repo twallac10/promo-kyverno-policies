@@ -6,10 +6,10 @@ metadata:
   name: kyverno-policies
   namespace: kyverno-policies
   annotations:
-    promo.twallac10.dev/chart-version: 3.9.2-4
+    promo.twallac10.dev/chart-version: 3.9.2-5
 spec:
   ref:
-    digest: sha256:cc53def4948e8538df13fede43906bbf6aeaa45aa2a788c7c490bae595ec3765
+    digest: sha256:0032a4fb83a6e396eb158e28b08cd4572a629444160cb23e05f8617a0c4a012c
 ---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
@@ -17,6 +17,6 @@ metadata:
   name: kyverno-policies
   namespace: kyverno-policies
   annotations:
-    event.toolkit.fluxcd.io/release-id: sha256:0004d3e085cc2e22cb84f6757827445b2f3b0a3620b083459ad11134153e5fa7
+    event.toolkit.fluxcd.io/release-id: sha256:e0f632b5aa1806929399e0705a75dd41c5bc2840f47c0da2efb873031fdfa052
 spec:
   values: {}
