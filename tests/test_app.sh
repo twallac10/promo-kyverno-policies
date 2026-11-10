@@ -11,3 +11,15 @@ test_policies_are_validatingpolicies() {
   [ "$n" -ge 1 ] || fail "no ValidatingPolicy rendered"
   [ "$(render dev | yq 'select(.kind=="ClusterPolicy") | .metadata.name' | grep -vc -- '---' || true)" = 0 ] || fail "unexpected ClusterPolicy"
 }
+
+test_host_path_exempts_local_path_provisioner() {
+  # kind's volume provisioner creates helper pods with hostPath mounts in local-path-storage;
+  # without this exception no volume can be provisioned where the policy is Enforce (prd).
+  for t in $TIERS; do
+    conds=$(render "$t" | yq -o json -I0 'select(.metadata.name=="disallow-host-path") | .spec.matchConditions // []')
+    echo "$conds" | jq -e '[.[] | select(.expression | test("local-path-storage"))] | length == 1' >/dev/null \
+      || fail "$t: disallow-host-path must exempt namespace local-path-storage: $conds"
+    others=$(render "$t" | yq 'select(.kind=="ValidatingPolicy" and .metadata.name!="disallow-host-path") | .spec.matchConditions[]?.expression' | grep -c local-path-storage || true)
+    [ "$others" = 0 ] || fail "$t: only disallow-host-path may exempt local-path-storage"
+  done
+}
