@@ -2,11 +2,14 @@
 # validationFailureAction is tier config: tiers/<tier>/tier.yaml.
 kyverno-policies:
   podSecurityStandard: baseline
-  # kind's volume provisioner runs helper pods with hostPath mounts in local-path-storage
-  # (cluster infrastructure). Without this, no volume can be provisioned where Enforce.
+  # kind's volume provisioner creates helper pods with hostPath mounts (cluster
+  # infrastructure); without this no volume can be provisioned where Enforce.
+  # Only pods the provisioner's own service account creates in its namespace.
   vpolExcludeByPolicy:
     disallow-host-path:
-      excludeNamespaces: [local-path-storage]
+      matchConditions:
+        - name: exempt-local-path-provisioner
+          expression: "!(request.namespace == 'local-path-storage' && request.userInfo.username == 'system:serviceaccount:local-path-storage:local-path-provisioner-service-account')"
 
 # Our Helm tests.
 promoTest:
