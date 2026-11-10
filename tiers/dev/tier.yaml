@@ -13,3 +13,5 @@ spec:
   values:
     kyverno-policies:
       validationFailureAction: Audit
+    behaviour:
+      tier: dev

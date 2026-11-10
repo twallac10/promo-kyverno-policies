@@ -26,3 +26,15 @@ test_host_path_exempts_local_path_provisioner() {
     [ "$others" = 0 ] || fail "$t: only disallow-host-path may exempt local-path-storage"
   done
 }
+
+test_behaviour_tier_expectation() {
+  # Behaviour (Testkube): a privileged pod is denied where policies Enforce (prd), admitted where Audit.
+  [ "$(check_names | tr '\n' ' ')" = "privileged-pod " ] || fail "behaviour checks: $(check_names)"
+  for t in $TIERS; do
+    case $t in prd) want=deny;; *) want=admit;; esac
+    s=$(behaviour "$t" | yq 'select(.kind=="TestWorkflow") | .spec.steps[] | select(.name == "privileged-pod") | .shell')
+    echo "$s" | grep -q "^expect=$want$" || fail "$t: privileged-pod must expect $want"
+  done
+  [ "$(render dev | test_hooks | yq 'select(.kind=="Pod") | .metadata.name' | grep -v -- '---' | tr '\n' ' ')" = "kyverno-policies-test-ready " ] || fail "smoke: policies-ready only"
+  [ "$(render dev | yq 'select(.kind=="Role" and .metadata.name=="kyverno-policies-behaviour") | .metadata.namespace + ":" + (.rules[0].verbs | join(","))')" = "default:create" ] || fail "dry-run pods in default"
+}

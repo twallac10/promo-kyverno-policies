@@ -1,0 +1,45 @@
+{{- /*
+Behaviour tests (Testkube): the tier's policy mode does what it says. A
+server-side dry-run of a privileged pod must be denied where the policies
+Enforce (behaviour.expectEnforce, tier.yaml) and admitted where they Audit.
+*/}}
+{{- define "kyverno-policies.check.privileged-pod" -}}
+expect={{ ternary "deny" "admit" (.Values.behaviour.expectEnforce | default false) }}
+pod='{"apiVersion":"v1","kind":"Pod","metadata":{"name":"promo-privileged-test"},"spec":{"containers":[{"name":"c","image":"busybox","securityContext":{"privileged":true}}]}}'
+for i in $(seq 1 20); do
+  if out=$(echo "$pod" | kubectl create -n {{ .Values.promoTest.dryRunNamespace }} --dry-run=server -f - 2>&1); then got=admit; else got=deny; fi
+  echo "attempt $i: $got: $out"
+  if [ "$got" = deny ] && ! echo "$out" | grep -qi privileged; then sleep 3; continue; fi  # an unrelated error, retry
+  if [ "$got" = "$expect" ]; then echo "PASS: privileged pod $got (expected $expect)"; exit 0; fi
+  sleep 3
+done
+echo "FAIL: privileged pod was not ${expect}ed"; exit 1
+{{- end -}}
+{{ include "promo.behaviour" (dict "ctx" . "checks" (list
+  (dict "name" "privileged-pod" "script" (include "kyverno-policies.check.privileged-pod" .))
+)) }}
+---
+# Server-side dry-runs of pods in the dry-run namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Release.Name }}-behaviour
+  namespace: {{ .Values.promoTest.dryRunNamespace }}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Release.Name }}-behaviour
+  namespace: {{ .Values.promoTest.dryRunNamespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Release.Name }}-behaviour
+subjects:
+  - kind: ServiceAccount
+    name: promo-behaviour-{{ .Release.Name }}
+    namespace: testkube
